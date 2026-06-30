@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ShadowTrace</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#1a1a1a;color:#d4d4d4;font-family:'Segoe UI',Arial,sans-serif;font-size:14px;min-height:100vh;}
+
+/* ── HEADER ── */
+header{display:flex;align-items:center;gap:12px;padding:12px 20px;background:#1a1a1a;border-bottom:1px solid #333;}
+.logo{font-size:22px;font-weight:700;color:#fff;letter-spacing:-0.5px;}
+.logo em{color:#e84040;font-style:normal;}
+.hbadge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:3px;letter-spacing:.3px;}
+.hb-red{background:#e84040;color:#fff;}
+.hb-blue{background:#2563a8;color:#fff;}
+.header-right{margin-left:auto;font-size:13px;color:#888;}
+
+/* ── STATS ── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid #333;}
+.stat{padding:16px 20px;border-right:1px solid #333;}
+.stat:last-child{border-right:none;}
+.stat-label{font-size:12px;color:#888;margin-bottom:6px;}
+.stat-value{font-size:28px;font-weight:700;}
+.sv-red{color:#e84040;} .sv-green{color:#4caf50;} .sv-amber{color:#e8a020;} .sv-white{color:#fff;}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:0;padding:16px 20px 0;border-bottom:1px solid #333;flex-wrap:wrap;}
+.tab{padding:8px 18px;border:1px solid #555;border-bottom:none;border-radius:4px 4px 0 0;cursor:pointer;font-size:13px;font-weight:600;color:#aaa;background:#222;margin-right:4px;transition:all .15s;}
+.tab.active,.tab:hover{background:#fff;color:#111;border-color:#fff;}
+.tab-custom{border-color:#2563a8 !important;color:#3d9be8 !important;}
+.tab-custom.active,.tab-custom:hover{background:#2563a8 !important;color:#fff !important;border-color:#2563a8 !important;}
+
+/* ── DSA TAGS ── */
+.dsa-row{display:flex;gap:8px;flex-wrap:wrap;padding:12px 20px;border-bottom:1px solid #2a2a2a;}
+.dsa-tag{font-size:11px;padding:4px 12px;border:1px solid #444;border-radius:20px;color:#aaa;background:#222;}
+
+/* ── MAIN ── */
+.main{padding:20px;}
+.panel{display:none;}
+.panel.active{display:block;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.grid60-40{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:16px;}
+
+/* ── CARD ── */
+.card{background:#242424;border:1px solid #333;border-radius:6px;padding:16px;}
+.card-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#888;margin-bottom:14px;}
+
+/* ── THREAT ROWS ── */
+.threat-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #2d2d2d;}
+.threat-row:last-child{border-bottom:none;}
+.tt{font-size:10px;font-weight:700;padding:3px 8px;border-radius:3px;min-width:70px;text-align:center;}
+.tt-PERSISTENCE_CYCLE{background:#3a1010;color:#e84040;border:1px solid #7a2020;}
+.tt-SPREAD{background:#2a1a00;color:#e8a020;border:1px solid #7a4a00;}
+.tt-MITM{background:#0a1a2a;color:#3d9be8;border:1px solid #1a4a7a;}
+.tt-persis{background:#3a1010;color:#e84040;border:1px solid #7a2020;}
+.tt-spread{background:#2a1a00;color:#e8a020;border:1px solid #7a4a00;}
+.tt-mitm{background:#0a1a2a;color:#3d9be8;border:1px solid #1a4a7a;}
+.threat-desc{flex:1;font-size:13px;color:#ccc;}
+.threat-score{font-size:18px;font-weight:700;min-width:30px;text-align:right;}
+
+/* ── NODE STATUS ── */
+.node-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #2d2d2d;}
+.node-row:last-child{border-bottom:none;}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.dot-red{background:#e84040;box-shadow:0 0 6px rgba(232,64,64,.5);}
+.dot-green{background:#4caf50;box-shadow:0 0 6px rgba(76,175,80,.5);}
+.dot-amber{background:#e8a020;}
+.node-name{font-size:13px;font-weight:600;color:#fff;min-width:100px;}
+.node-meta{font-size:12px;color:#666;margin-left:auto;}
+
+/* ── NETWORK TOPOLOGY ── */
+.topo-card{background:#242424;border:1px solid #333;border-radius:6px;padding:16px;margin-bottom:16px;}
+#topo-canvas{width:100%;border-radius:4px;background:#1a1a1a;display:block;}
+
+/* ── TIMELINE ── */
+.tl-row{display:flex;align-items:center;gap:10px;padding:5px 0;}
+.tl-label{font-size:12px;color:#ccc;min-width:180px;}
+.tl-bar-wrap{flex:1;height:6px;background:#333;border-radius:3px;overflow:hidden;}
+.tl-bar{height:100%;background:#e84040;border-radius:3px;transition:width .5s;}
+.tl-t{font-size:12px;color:#666;min-width:30px;text-align:right;}
+
+/* ── PATH ── */
+.path-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.path-node{padding:5px 12px;border-radius:3px;font-size:12px;font-weight:600;}
+.pn-entry{background:#3a1010;color:#e84040;border:1px solid #7a2020;}
+.pn-db{background:#4a1010;color:#ff6060;border:1px solid #e84040;}
+.path-arr{color:#555;font-size:16px;}
+
+/* ── SEGMENTS ── */
+.seg-label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#666;margin:10px 0 6px;}
+.seg-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #2d2d2d;}
+.seg-row:last-child{border-bottom:none;}
+.seg-name{font-size:13px;font-weight:600;color:#fff;flex:1;}
+.seg-id{font-size:12px;color:#555;}
+
+/* ── HEAP ── */
+.heap-item{display:flex;align-items:center;gap:12px;padding:12px;background:#1e1e1e;border-radius:4px;margin-bottom:8px;border:1px solid #2d2d2d;}
+.heap-rank{font-size:20px;font-weight:700;color:#555;min-width:20px;}
+.heap-info{flex:1;}
+.hbar-wrap{width:200px;height:6px;background:#333;border-radius:3px;overflow:hidden;}
+.hbar{height:100%;border-radius:3px;}
+.heap-score{font-size:20px;font-weight:700;min-width:36px;text-align:right;}
+
+/* ── BLOOM ── */
+.bloom-grid{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;}
+.bloom-bit{width:16px;height:16px;border-radius:2px;border:1px solid #333;background:#1e1e1e;cursor:default;transition:all .2s;}
+.bloom-bit.on{background:#2563a8;border-color:#3d9be8;box-shadow:0 0 4px rgba(61,155,232,.4);}
+.bloom-controls{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+.bloom-input{background:#1e1e1e;border:1px solid #444;color:#fff;border-radius:4px;padding:7px 10px;font-size:13px;width:90px;outline:none;font-family:inherit;}
+.bloom-input:focus{border-color:#3d9be8;}
+.bloom-btn{background:#333;border:1px solid #555;color:#ccc;border-radius:4px;padding:7px 14px;font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s;}
+.bloom-btn:hover{background:#444;color:#fff;}
+.bloom-result{font-size:12px;padding:7px 12px;border-radius:4px;margin-top:6px;}
+.br-yes{background:#2a1a00;color:#e8a020;border:1px solid #7a4a00;}
+.br-no{background:#0a200a;color:#4caf50;border:1px solid #1a5a1a;}
+.preflag{font-size:12px;color:#666;margin-top:8px;}
+.preflag strong{color:#aaa;}
+
+/* ── REMOVAL ── */
+.removal-step{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #2d2d2d;}
+.removal-step:last-child{border-bottom:none;}
+.rs-num{width:22px;height:22px;border-radius:50%;border:1px solid #555;background:#1e1e1e;display:flex;align-items:center;justify-content:center;font-size:11px;color:#888;flex-shrink:0;margin-top:2px;}
+.rs-title{font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;}
+.rs-sub{font-size:12px;color:#666;}
+.cycle-desc{font-size:12px;color:#777;margin-bottom:12px;padding:8px;background:#1e1e1e;border-radius:3px;}
+
+/* ── ART POINTS ── */
+.art-item{display:flex;align-items:center;gap:10px;padding:10px;background:#1e1e1e;border-radius:4px;margin-bottom:8px;border:1px solid #2d2d2d;}
+.art-dot{width:10px;height:10px;border-radius:50%;background:#e8a020;box-shadow:0 0 5px rgba(232,160,32,.4);flex-shrink:0;}
+.art-name{font-size:13px;font-weight:600;color:#fff;}
+.art-note{font-size:12px;color:#666;}
+
+/* ── ENTRY POINT BOX ── */
+.entry-box{padding:12px;background:#1e1e1e;border-radius:4px;border:1px solid #2d2d2d;margin-top:12px;}
+.eb-label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#666;margin-bottom:6px;}
+.eb-val{font-size:13px;font-weight:600;color:#fff;}
+/* ── MITM PATHS ── */
+.mitm-section{margin-bottom:16px;}
+.mitm-label{font-size:11px;font-weight:700;letter-spacing:.5px;margin-bottom:8px;}
+.ml-green{color:#4caf50;} .ml-red{color:#e84040;}
+.mitm-path{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.mn{padding:7px 16px;border-radius:4px;font-size:13px;font-weight:600;}
+.mn-normal{background:#2a2a2a;color:#ccc;border:1px solid #444;}
+.mn-attacker{background:#3a1010;color:#e84040;border:1px solid #e84040;}
+.mn-ok{background:#0a200a;color:#4caf50;border:1px solid #2a5a2a;}
+.m-arr{font-size:18px;}
+.m-arr-ok{color:#4caf50;} .m-arr-bad{color:#e84040;}
+.arp-note{font-size:12px;color:#e84040;margin-top:8px;}
+
+/* ── LOADING / ERROR ── */
+.loading-msg{color:#555;font-size:13px;padding:20px 0;}
+.error-msg{color:#e84040;font-size:13px;padding:12px;background:#1e0a0a;border-radius:4px;border:1px solid #5a1a1a;}
+
+/* ════════════════════════════════════════════
+   CUSTOM SIMULATION PANEL
+════════════════════════════════════════════ */
+.sim-intro{font-size:13px;color:#888;margin-bottom:20px;padding:12px;background:#1e1e1e;border-radius:4px;border-left:3px solid #2563a8;line-height:1.6;}
+.sim-section-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#3d9be8;margin-bottom:10px;margin-top:20px;}
+.sim-section-title:first-of-type{margin-top:0;}
+
+/* Node builder */
+.node-builder{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:8px;}
+.sim-input{background:#1e1e1e;border:1px solid #444;color:#fff;border-radius:4px;padding:7px 10px;font-size:13px;outline:none;font-family:inherit;}
+.sim-input:focus{border-color:#3d9be8;}
+.sim-input-sm{width:80px;}
+.sim-input-md{width:130px;}
+.sim-label{font-size:11px;color:#666;margin-bottom:4px;display:block;}
+.sim-group{display:flex;flex-direction:column;}
+.sim-btn{background:#2563a8;border:1px solid #3d9be8;color:#fff;border-radius:4px;padding:7px 16px;font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s;font-weight:600;}
+.sim-btn:hover{background:#1a4a80;}
+.sim-btn-red{background:#5a1010;border-color:#e84040;color:#e84040;}
+.sim-btn-red:hover{background:#7a1a1a;}
+.sim-btn-run{background:#e84040;border-color:#e84040;color:#fff;padding:10px 28px;font-size:14px;width:100%;margin-top:16px;}
+.sim-btn-run:hover{background:#c03030;}
+.sim-btn-run:disabled{background:#333;border-color:#555;color:#666;cursor:not-allowed;}
+
+/* Node/edge tables */
+.sim-table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:13px;}
+.sim-table th{text-align:left;padding:6px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#666;border-bottom:1px solid #2d2d2d;}
+.sim-table td{padding:8px 10px;border-bottom:1px solid #1e1e1e;color:#ccc;}
+.sim-table tr:hover td{background:#1e1e1e;}
+.del-btn{background:none;border:none;color:#555;cursor:pointer;font-size:14px;padding:2px 6px;border-radius:3px;}
+.del-btn:hover{color:#e84040;background:#2a1010;}
+
+/* Entry node selector */
+.entry-selector{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.entry-select{background:#1e1e1e;border:1px solid #444;color:#fff;border-radius:4px;padding:7px 10px;font-size:13px;outline:none;font-family:inherit;min-width:160px;}
+.entry-select:focus{border-color:#e84040;}
+
+/* Presets */
+.preset-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.preset-btn{background:#1e1e1e;border:1px solid #444;color:#888;border-radius:4px;padding:6px 14px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s;}
+.preset-btn:hover{border-color:#3d9be8;color:#3d9be8;}
+
+/* Results */
+.sim-results{margin-top:24px;display:none;}
+.sim-results.visible{display:block;}
+.sim-results-header{display:flex;align-items:center;gap:16px;padding:16px;background:#1e1e1e;border-radius:6px;border:1px solid #333;margin-bottom:16px;flex-wrap:wrap;}
+.sim-stat{text-align:center;}
+.sim-stat-val{font-size:26px;font-weight:700;}
+.sim-stat-label{font-size:11px;color:#666;margin-top:2px;}
+.sim-divider{width:1px;height:40px;background:#333;}
+.sim-threat-badge{padding:8px 16px;border-radius:4px;font-size:12px;font-weight:600;background:#2a1010;color:#e84040;border:1px solid #5a1a1a;flex:1;min-width:200px;}
+.sim-threat-badge.safe{background:#0a200a;color:#4caf50;border-color:#1a5a1a;}
+
+/* ── SCROLL ── */
+.main::-webkit-scrollbar{width:4px;}
+.main::-webkit-scrollbar-track{background:#1a1a1a;}
+.main::-webkit-scrollbar-thumb{background:#444;border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">Shadow<em>Trace</em></div>
+  <span class="hbadge hb-red">THREATS DETECTED</span>
+  <span class="hbadge hb-blue">Buffer 7.0</span>
+  <div class="header-right">Team B · Java</div>
+</header>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat"><div class="stat-label">Compromised nodes</div><div class="stat-value sv-red"   id="stat-compromised">–</div></div>
+  <div class="stat"><div class="stat-label">Clean nodes</div>      <div class="stat-value sv-green"  id="stat-clean">–</div></div>
+  <div class="stat"><div class="stat-label">Threat events</div>    <div class="stat-value sv-amber"  id="stat-threats">–</div></div>
+  <div class="stat"><div class="stat-label">Highest risk score</div><div class="stat-value sv-red"  id="stat-risk">–</div></div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('overview',this)">Overview</div>
+  <div class="tab" onclick="switchTab('spread',this)">Spread simulation</div>
+  <div class="tab" onclick="switchTab('scoring',this)">Risk scoring</div>
+  <div class="tab" onclick="switchTab('removal',this)">Removal plan</div>
+  <div class="tab tab-custom" onclick="switchTab('custom',this)">⚙ Custom Simulation</div>
+</div>
+
+<!-- DSA TAGS -->
+<div class="dsa-row" id="dsa-row"></div>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+  <!-- ══ OVERVIEW ══ -->
+  <div id="panel-overview" class="panel active">
+    <div class="grid60-40">
+      <div class="card">
+        <div class="card-title">Threat events — ranked by risk</div>
+        <div id="threat-list"><div class="loading-msg">Loading threats…</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Node status</div>
+        <div id="node-list"><div class="loading-msg">Loading nodes…</div></div>
+      </div>
+    </div>
+    <div class="topo-card">
+      <div class="card-title">Network topology (8 nodes)</div>
+      <canvas id="topo-canvas" height="280"></canvas>
+    </div>
+  </div>
+
+  <!-- ══ SPREAD ══ -->
+  <div id="panel-spread" class="panel">
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title" id="spread-timeline-title">Infection timeline</div>
+        <div id="spread-timeline"><div class="loading-msg">Loading timeline…</div></div>
+        <div id="spread-path-section" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid #2d2d2d;">
+          <div class="card-title" style="margin-bottom:8px">Fastest spread path</div>
+          <div class="path-row" id="spread-path"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Network segments (DSU)</div>
+        <div id="spread-segments"><div class="loading-msg">Loading segments…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCORING ══ -->
+  <div id="panel-scoring" class="panel">
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">Risk heap — highest threat first</div>
+        <div id="scoring-heap"><div class="loading-msg">Loading heap…</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Bloom filter — flagged nodes</div>
+        <div style="font-size:12px;color:#666;margin-bottom:10px">Bit array (size 32). Blue = set. O(1) lookup.</div>
+        <div class="bloom-grid" id="bloom-grid"></div>
+        <div class="bloom-controls">
+          <input type="number" id="bloom-in" class="bloom-input" placeholder="Node ID" min="1" max="50"/>
+          <button class="bloom-btn" onclick="bloomAdd()">Add</button>
+          <button class="bloom-btn" onclick="bloomCheck()">Check</button>
+        </div>
+        <div id="bloom-result" style="display:none" class="bloom-result"></div>
+        <div class="preflag" id="bloom-preflag">Pre-flagged nodes<br><strong>Loading…</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ REMOVAL ══ -->
+  <div id="panel-removal" class="panel">
+    <div class="grid2" style="margin-bottom:16px">
+      <div class="card">
+        <div class="card-title">Persistence cycle — safe removal order</div>
+        <div class="cycle-desc" id="removal-cycle-desc">Loading…</div>
+        <div id="removal-steps"><div class="loading-msg">Loading steps…</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Articulation points</div>
+        <div style="font-size:12px;color:#666;margin-bottom:12px">Removing these nodes breaks the persistence chain entirely.</div>
+        <div id="removal-art-points"><div class="loading-msg">Loading…</div></div>
+        <div class="entry-box" id="removal-entry-box" style="display:none">
+          <div class="eb-label">Entry point (betweenness centrality)</div>
+          <div class="eb-val" id="removal-entry-val"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">MITM detection — Dijkstra path analysis</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;" id="mitm-section">
+        <div class="loading-msg">Loading MITM paths…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CUSTOM SIMULATION ══ -->
+  <div id="panel-custom" class="panel">
+    <div class="sim-intro">
+      🛰 <strong>Custom Network Simulation</strong> — Define your own network topology and run a real threat spread analysis.<br>
+      Add nodes (devices), connect them with edges (trust weights), pick an attacker entry point, then hit <strong>Run Simulation</strong>.
+      The backend will perform BFS spread, Dijkstra path analysis, and risk scoring on your network.
+    </div>
+
+    <div class="grid2">
+      <!-- LEFT: node + edge builder -->
+      <div>
+        <!-- Quick presets -->
+        <div class="sim-section-title">Quick presets</div>
+        <div class="preset-row">
+          <button class="preset-btn" onclick="loadPreset('office')">🏢 Small Office</button>
+          <button class="preset-btn" onclick="loadPreset('hospital')">🏥 Hospital Network</button>
+          <button class="preset-btn" onclick="loadPreset('bank')">🏦 Bank Infrastructure</button>
+          <button class="preset-btn" onclick="loadPreset('factory')">🏭 Factory IoT</button>
+        </div>
+
+        <!-- Add node -->
+        <div class="sim-section-title">1 · Add nodes</div>
+        <div class="node-builder">
+          <div class="sim-group"><label class="sim-label">ID</label><input type="number" id="n-id" class="sim-input sim-input-sm" placeholder="1" min="1"/></div>
+          <div class="sim-group"><label class="sim-label">Name</label><input type="text" id="n-name" class="sim-input sim-input-md" placeholder="Web_Server"/></div>
+          <div class="sim-group"><label class="sim-label">Type</label>
+            <select id="n-type" class="sim-input sim-input-md">
+              <option value="server">Server</option>
+              <option value="workstation">Workstation</option>
+              <option value="database">Database</option>
+              <option value="router">Router</option>
+              <option value="iot">IoT Device</option>
+              <option value="guest">Guest / External</option>
+            </select>
+          </div>
+          <div class="sim-group"><label class="sim-label">Trust (0–1)</label><input type="number" id="n-trust" class="sim-input sim-input-sm" placeholder="0.8" min="0" max="1" step="0.1"/></div>
+          <button class="sim-btn" onclick="addNode()">+ Add</button>
+        </div>
+        <table class="sim-table" id="node-table">
+          <thead><tr><th>ID</th><th>Name</th><th>Type</th><th>Trust</th><th></th></tr></thead>
+          <tbody id="node-tbody"></tbody>
+        </table>
+
+        <!-- Add edge -->
+        <div class="sim-section-title">2 · Add edges (connections)</div>
+        <div class="node-builder">
+          <div class="sim-group"><label class="sim-label">From Node ID</label><input type="number" id="e-from" class="sim-input sim-input-sm" placeholder="1" min="1"/></div>
+          <div class="sim-group"><label class="sim-label">To Node ID</label><input type="number" id="e-to" class="sim-input sim-input-sm" placeholder="2" min="1"/></div>
+          <div class="sim-group"><label class="sim-label">Weight (0–1)</label><input type="number" id="e-weight" class="sim-input sim-input-sm" placeholder="0.8" min="0" max="1" step="0.1"/></div>
+          <button class="sim-btn" onclick="addEdge()">+ Add</button>
+        </div>
+        <div style="font-size:11px;color:#555;margin-bottom:8px;">Weight &gt; 0.3 = threat can spread. Higher = faster spread.</div>
+        <table class="sim-table" id="edge-table">
+          <thead><tr><th>From</th><th>To</th><th>Weight</th><th></th></tr></thead>
+          <tbody id="edge-tbody"></tbody>
+        </table>
+
+        <!-- Entry node -->
+        <div class="sim-section-title">3 · Set attacker entry point</div>
+        <div class="entry-selector">
+          <select id="entry-select" class="entry-select"><option value="">— select entry node —</option></select>
+          <span style="font-size:12px;color:#666;">This is where the attacker enters the network.</span>
+        </div>
+
+        <button class="sim-btn sim-btn-run" id="run-btn" onclick="runSimulation()" disabled>▶ Run Simulation</button>
+        <div id="sim-error" style="display:none;margin-top:10px;" class="error-msg"></div>
+      </div>
+
+      <!-- RIGHT: live results -->
+      <div>
+        <div class="sim-section-title">Simulation results</div>
+        <div id="sim-results" class="sim-results">
+
+          <!-- Summary stats -->
+          <div class="sim-results-header">
+            <div class="sim-stat">
+              <div class="sim-stat-val sv-red" id="sr-compromised">–</div>
+              <div class="sim-stat-label">Compromised</div>
+            </div>
+            <div class="sim-divider"></div>
+            <div class="sim-stat">
+              <div class="sim-stat-val sv-green" id="sr-clean">–</div>
+              <div class="sim-stat-label">Clean</div>
+            </div>
+            <div class="sim-divider"></div>
+            <div class="sim-stat">
+              <div class="sim-stat-val sv-red" id="sr-score">–</div>
+              <div class="sim-stat-label">Risk Score</div>
+            </div>
+            <div id="sr-threat-badge" class="sim-threat-badge">–</div>
+          </div>
+
+          <!-- Infection timeline -->
+          <div class="card" style="margin-bottom:12px;">
+            <div class="card-title">Infection timeline</div>
+            <div id="sr-timeline"></div>
+            <div id="sr-path-wrap" style="margin-top:12px;padding-top:10px;border-top:1px solid #2d2d2d;display:none;">
+              <div class="card-title" style="margin-bottom:6px;">Fastest spread path</div>
+              <div class="path-row" id="sr-path"></div>
+            </div>
+          </div>
+
+          <!-- Node status -->
+          <div class="card" style="margin-bottom:12px;">
+            <div class="card-title">Node status</div>
+            <div id="sr-nodes"></div>
+          </div>
+
+          <!-- Articulation points -->
+          <div class="card">
+            <div class="card-title">Critical nodes to remove</div>
+            <div style="font-size:12px;color:#666;margin-bottom:10px">Removing these disrupts the spread chain.</div>
+            <div id="sr-art"></div>
+          </div>
+
+        </div>
+        <div id="sim-placeholder" style="color:#444;font-size:13px;padding:40px 0;text-align:center;">
+          Add nodes and edges, then click<br><strong style="color:#666;">Run Simulation</strong> to see results here.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════
+const API_BASE = 'http://localhost:8080/api';
+
+// ═══════════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════════════
+const dsaTags = {
+  overview: [],
+  spread:   ['Trust-Weighted BFS','Priority Queue','Union-Find (DSU)','Dijkstra (fastest path)'],
+  scoring:  ['Max-Heap (PriorityQueue)','ThreatScorer','Bloom Filter'],
+  removal:  ["Topological Sort (Kahn's)",'Tarjan\'s SCC','Articulation Points'],
+  custom:   ['BFS Spread Simulation','Dijkstra Path','Degree Centrality','Dynamic Risk Scoring'],
+};
+function switchTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + id).classList.add('active');
+  const row = document.getElementById('dsa-row');
+  const tags = dsaTags[id] || [];
+  row.innerHTML = tags.map(t => `<span class="dsa-tag">${t}</span>`).join('');
+  row.style.display = tags.length ? 'flex' : 'none';
+  if (id === 'overview') drawTopology();
+}
+document.getElementById('dsa-row').style.display = 'none';
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+function threatClass(type) {
+  if (type === 'PERSISTENCE_CYCLE') return 'tt-PERSISTENCE_CYCLE';
+  if (type === 'SPREAD')            return 'tt-SPREAD';
+  if (type === 'MITM')              return 'tt-MITM';
+  return 'tt-MITM';
+}
+function threatLabel(type) {
+  if (type === 'PERSISTENCE_CYCLE') return 'PERSISTENCE CYCLE';
+  return type;
+}
+function scoreColor(score) {
+  if (score >= 75) return '#e84040';
+  if (score >= 60) return '#e8a020';
+  return '#3d9be8';
+}
+async function apiFetch(endpoint, opts) {
+  const resp = await fetch(API_BASE + endpoint, opts);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.json();
+}
+function setError(id, msg) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = `<div class="error-msg">⚠ ${msg}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LOAD DEMO DATA
+// ═══════════════════════════════════════════════════════════════
+async function loadOverview() {
+  try {
+    const data = await apiFetch('/overview');
+    document.getElementById('stat-compromised').textContent = data.compromisedNodes ?? '–';
+    document.getElementById('stat-clean').textContent       = data.cleanNodes ?? '–';
+    document.getElementById('stat-threats').textContent     = data.threatEvents ?? '–';
+    document.getElementById('stat-risk').textContent        = data.highestRiskScore ?? '–';
+    const threatListEl = document.getElementById('threat-list');
+    if (data.threats && data.threats.length) {
+      threatListEl.innerHTML = data.threats.map(t => `
+        <div class="threat-row">
+          <span class="tt ${threatClass(t.type)}">${threatLabel(t.type)}</span>
+          <span class="threat-desc">${t.description}</span>
+          <span class="threat-score" style="color:${scoreColor(t.score)}">${t.score}</span>
+        </div>`).join('');
+    }
+    const nodeListEl = document.getElementById('node-list');
+    if (data.nodes && data.nodes.length) {
+      nodeListEl.innerHTML = data.nodes.map(n => `
+        <div class="node-row">
+          <div class="dot ${n.compromised ? 'dot-red' : 'dot-green'}"></div>
+          <div class="node-name">${n.name}</div>
+          <div class="node-meta">trust ${n.trust} · ${n.compromised ? 'compromised' : 'clean'}</div>
+        </div>`).join('');
+    }
+    drawTopology(data.nodes);
+  } catch (err) {
+    setError('threat-list', 'Could not reach backend. Make sure Spring Boot is running on :8080');
+    setError('node-list', 'Backend unavailable.');
+    drawTopology();
+  }
+}
+
+async function loadSpread() {
+  try {
+    const data = await apiFetch('/spread');
+    if (data.entryNodeName) document.getElementById('spread-timeline-title').textContent =
+      `Infection timeline — entry point: Node ${data.entryNodeId}`;
+    if (data.timeline && data.timeline.length) {
+      document.getElementById('spread-timeline').innerHTML = data.timeline.map(e => `
+        <div class="tl-row">
+          <div class="tl-label">Node ${e.nodeId} — ${e.nodeName}</div>
+          <div class="tl-bar-wrap"><div class="tl-bar" style="width:${e.barPercent}%"></div></div>
+          <div class="tl-t">T=${e.time}</div>
+        </div>`).join('');
+    }
+    const pathSection = document.getElementById('spread-path-section');
+    if (data.fastestPath && data.fastestPath.length) {
+      pathSection.style.display = 'block';
+      const lastIdx = data.fastestPath.length - 1;
+      document.getElementById('spread-path').innerHTML =
+        data.fastestPath.map((id, i) => {
+          const cls = i === lastIdx ? 'pn-db' : 'pn-entry';
+          const arrow = i < lastIdx ? '<span class="path-arr">→</span>' : '';
+          return `<div class="path-node ${cls}">${id}</div>${arrow}`;
+        }).join('') +
+        `<span style="font-size:12px;color:#e84040;margin-left:4px">· ${data.fastestPathNote || ''}</span>`;
+    }
+    if (data.segments && data.segments.length) {
+      document.getElementById('spread-segments').innerHTML = data.segments.map(seg => `
+        <div class="seg-label">${seg.label}</div>
+        ${seg.nodes.map(n => `
+          <div class="seg-row">
+            <div class="dot ${n.compromised ? 'dot-red' : 'dot-green'}"></div>
+            <div class="seg-name">${n.name}</div>
+            <div class="seg-id">Node ${n.id}</div>
+          </div>`).join('')}`).join('');
+    }
+  } catch (err) {
+    setError('spread-timeline', 'Backend unavailable.');
+    setError('spread-segments', 'Backend unavailable.');
+  }
+}
+
+async function loadScoring() {
+  try {
+    const data = await apiFetch('/scoring');
+    const scMap = {'#e84040':'sv-red','#e8a020':'sv-amber','#4caf50':'sv-green'};
+    if (data.rankedThreats && data.rankedThreats.length) {
+      document.getElementById('scoring-heap').innerHTML = data.rankedThreats.map(t => {
+        const col = t.barColor || '#3d9be8';
+        return `
+          <div class="heap-item">
+            <div class="heap-rank">${t.rank}</div>
+            <div class="heap-info">
+              <div style="margin-bottom:6px"><span class="tt ${threatClass(t.type)}">${threatLabel(t.type)}</span></div>
+              <div class="hbar-wrap"><div class="hbar" style="width:${t.score}%;background:${col}"></div></div>
+            </div>
+            <div class="heap-score ${scMap[col]||'sv-white'}">${t.score}</div>
+          </div>`;
+      }).join('');
+    }
+    if (data.preFlaggedNodes) {
+      data.preFlaggedNodes.forEach(id => bloomAddId(id));
+      document.getElementById('bloom-preflag').innerHTML =
+        `Pre-flagged nodes<br><strong>Nodes ${data.preFlaggedNodes.join(', ')} are already added to the filter.</strong>`;
+    }
+  } catch (err) {
+    setError('scoring-heap', 'Backend unavailable.');
+    [1,2,3,5,6,12].forEach(bloomAddId);
+  }
+}
+
+async function loadRemoval() {
+  try {
+    const data = await apiFetch('/removal');
+    if (data.cycleDescription) document.getElementById('removal-cycle-desc').textContent = data.cycleDescription;
+    if (data.removalSteps && data.removalSteps.length) {
+      document.getElementById('removal-steps').innerHTML = data.removalSteps.map(s => `
+        <div class="removal-step">
+          <div class="rs-num">${s.step}</div>
+          <div><div class="rs-title">${s.title}</div><div class="rs-sub">${s.subtitle}</div></div>
+        </div>`).join('');
+    }
+    if (data.articulationPoints && data.articulationPoints.length) {
+      document.getElementById('removal-art-points').innerHTML = data.articulationPoints.map(ap => `
+        <div class="art-item">
+          <div class="art-dot"></div>
+          <div><div class="art-name">${ap.name}</div><div class="art-note">${ap.note}</div></div>
+        </div>`).join('');
+    }
+    if (data.entryPointNote) {
+      document.getElementById('removal-entry-box').style.display = 'block';
+      document.getElementById('removal-entry-val').textContent = data.entryPointNote;
+    }
+    if (data.mitmPaths && data.mitmPaths.length) {
+      document.getElementById('mitm-section').innerHTML = data.mitmPaths.map((path, idx) => {
+        const isExp   = idx === 0;
+        const lblCls  = isExp ? 'ml-green' : 'ml-red';
+        const arrCls  = isExp ? 'm-arr-ok' : 'm-arr-bad';
+        const nodeCls = n => isExp ? 'mn-ok' : (n.includes('Intercept') ? 'mn-attacker' : 'mn-normal');
+        const nodesHtml = path.nodes.map((n, i) =>
+          `<div class="mn ${nodeCls(n)}">${n}</div>${i < path.nodes.length-1 ? `<span class="m-arr ${arrCls}">→</span>` : ''}`
+        ).join('');
+        return `<div class="mitm-section">
+          <div class="mitm-label ${lblCls}">${path.label}</div>
+          <div class="mitm-path">${nodesHtml}</div>
+          ${path.arpNote ? `<div class="arp-note">${path.arpNote}</div>` : ''}
+        </div>`;
+      }).join('');
+    }
+  } catch (err) {
+    setError('removal-steps',     'Backend unavailable.');
+    setError('removal-art-points','Backend unavailable.');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CUSTOM SIMULATION — state
+// ═══════════════════════════════════════════════════════════════
+let simNodes = [];
+let simEdges = [];
+
+function refreshNodeTable() {
+  document.getElementById('node-tbody').innerHTML = simNodes.map((n, i) => `
+    <tr>
+      <td>${n.id}</td>
+      <td>${n.name}</td>
+      <td>${n.type}</td>
+      <td>${n.trust}</td>
+      <td><button class="del-btn" onclick="removeNode(${i})">✕</button></td>
+    </tr>`).join('');
+  // refresh entry selector
+  const sel = document.getElementById('entry-select');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— select entry node —</option>' +
+    simNodes.map(n => `<option value="${n.id}" ${n.id == cur ? 'selected' : ''}>${n.id} · ${n.name}</option>`).join('');
+  checkRunnable();
+}
+
+function refreshEdgeTable() {
+  document.getElementById('edge-tbody').innerHTML = simEdges.map((e, i) => `
+    <tr>
+      <td>${e.from}</td>
+      <td>${e.to}</td>
+      <td>${e.weight}</td>
+      <td><button class="del-btn" onclick="removeEdge(${i})">✕</button></td>
+    </tr>`).join('');
+}
+
+function addNode() {
+  const id    = parseInt(document.getElementById('n-id').value);
+  const name  = document.getElementById('n-name').value.trim();
+  const type  = document.getElementById('n-type').value;
+  const trust = parseFloat(document.getElementById('n-trust').value);
+  if (!id || !name || isNaN(trust) || trust < 0 || trust > 1) {
+    alert('Please fill in all node fields. Trust must be 0–1.'); return;
+  }
+  if (simNodes.find(n => n.id === id)) { alert('Node ID already exists.'); return; }
+  simNodes.push({id, name, type, trust});
+  refreshNodeTable();
+  document.getElementById('n-id').value = id + 1;
+  document.getElementById('n-name').value = '';
+}
+
+function removeNode(i) { simNodes.splice(i, 1); refreshNodeTable(); }
+
+function addEdge() {
+  const from   = parseInt(document.getElementById('e-from').value);
+  const to     = parseInt(document.getElementById('e-to').value);
+  const weight = parseFloat(document.getElementById('e-weight').value);
+  if (!from || !to || isNaN(weight) || weight < 0 || weight > 1) {
+    alert('Please fill in all edge fields. Weight must be 0–1.'); return;
+  }
+  if (from === to) { alert('From and To cannot be the same node.'); return; }
+  simEdges.push({from, to, weight});
+  refreshEdgeTable();
+}
+
+function removeEdge(i) { simEdges.splice(i, 1); refreshEdgeTable(); }
+
+function checkRunnable() {
+  const entry = document.getElementById('entry-select').value;
+  document.getElementById('run-btn').disabled = simNodes.length < 2 || !entry;
+}
+
+document.getElementById('entry-select').addEventListener('change', checkRunnable);
+
+// ═══════════════════════════════════════════════════════════════
+// PRESETS
+// ═══════════════════════════════════════════════════════════════
+const PRESETS = {
+  office: {
+    nodes: [
+      {id:1,name:'Reception_PC',  type:'workstation',trust:0.4},
+      {id:2,name:'HR_Server',     type:'server',     trust:0.8},
+      {id:3,name:'Finance_DB',    type:'database',   trust:0.95},
+      {id:4,name:'IT_Admin_PC',   type:'workstation',trust:0.85},
+      {id:5,name:'Guest_WiFi',    type:'guest',      trust:0.1},
+      {id:6,name:'Backup_Server', type:'server',     trust:0.7},
+    ],
+    edges: [
+      {from:5,to:1,weight:0.5},{from:1,to:2,weight:0.7},{from:2,to:3,weight:0.9},
+      {from:2,to:4,weight:0.8},{from:4,to:3,weight:0.9},{from:3,to:6,weight:0.6},
+    ],
+    entry: 5
+  },
+  hospital: {
+    nodes: [
+      {id:1,name:'Patient_Terminal',type:'workstation',trust:0.3},
+      {id:2,name:'Nurse_Station',   type:'workstation',trust:0.6},
+      {id:3,name:'MRI_Device',      type:'iot',        trust:0.5},
+      {id:4,name:'Patient_DB',      type:'database',   trust:0.95},
+      {id:5,name:'Admin_Server',    type:'server',     trust:0.9},
+      {id:6,name:'Billing_System',  type:'server',     trust:0.8},
+      {id:7,name:'External_Portal', type:'guest',      trust:0.15},
+    ],
+    edges: [
+      {from:7,to:1,weight:0.4},{from:1,to:2,weight:0.6},{from:2,to:4,weight:0.8},
+      {from:3,to:4,weight:0.7},{from:4,to:5,weight:0.9},{from:5,to:6,weight:0.8},
+    ],
+    entry: 7
+  },
+  bank: {
+    nodes: [
+      {id:1,name:'ATM_Network',    type:'iot',      trust:0.4},
+      {id:2,name:'Core_Banking',   type:'server',   trust:0.99},
+      {id:3,name:'Fraud_Detection',type:'server',   trust:0.9},
+      {id:4,name:'Customer_DB',    type:'database', trust:0.95},
+      {id:5,name:'Online_Portal',  type:'guest',    trust:0.2},
+      {id:6,name:'Internal_LAN',   type:'router',   trust:0.7},
+    ],
+    edges: [
+      {from:5,to:6,weight:0.35},{from:6,to:1,weight:0.5},{from:1,to:2,weight:0.8},
+      {from:6,to:3,weight:0.6},{from:3,to:4,weight:0.9},{from:2,to:4,weight:0.95},
+    ],
+    entry: 5
+  },
+  factory: {
+    nodes: [
+      {id:1,name:'PLC_Controller', type:'iot',       trust:0.6},
+      {id:2,name:'SCADA_Server',   type:'server',    trust:0.85},
+      {id:3,name:'Sensor_Net',     type:'iot',       trust:0.3},
+      {id:4,name:'HMI_Terminal',   type:'workstation',trust:0.5},
+      {id:5,name:'Corporate_LAN',  type:'router',    trust:0.7},
+      {id:6,name:'Remote_Access',  type:'guest',     trust:0.1},
+    ],
+    edges: [
+      {from:6,to:3,weight:0.4},{from:3,to:1,weight:0.6},{from:1,to:2,weight:0.8},
+      {from:4,to:2,weight:0.7},{from:5,to:4,weight:0.6},{from:2,to:5,weight:0.5},
+    ],
+    entry: 6
+  }
+};
+
+function loadPreset(name) {
+  const p = PRESETS[name];
+  if (!p) return;
+  simNodes = p.nodes.map(n => ({...n}));
+  simEdges = p.edges.map(e => ({...e}));
+  refreshNodeTable();
+  refreshEdgeTable();
+  document.getElementById('entry-select').value = p.entry;
+  checkRunnable();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RUN SIMULATION
+// ═══════════════════════════════════════════════════════════════
+async function runSimulation() {
+  const entryId = parseInt(document.getElementById('entry-select').value);
+  if (!entryId || simNodes.length < 2) return;
+
+  const errEl = document.getElementById('sim-error');
+  errEl.style.display = 'none';
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Running…';
+
+  const payload = { nodes: simNodes, edges: simEdges, entryNodeId: entryId };
+
+  try {
+    const data = await apiFetch('/simulate', {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify(payload)
+    });
+    renderSimResults(data);
+  } catch (err) {
+    errEl.style.display = 'block';
+    errEl.textContent   = '⚠ Could not reach backend. Make sure Spring Boot is running on :8080';
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = '▶ Run Simulation';
+  }
+}
+
+function renderSimResults(data) {
+  document.getElementById('sim-placeholder').style.display = 'none';
+  const res = document.getElementById('sim-results');
+  res.classList.add('visible');
+
+  // Stats
+  document.getElementById('sr-compromised').textContent = data.compromisedNodes;
+  document.getElementById('sr-clean').textContent       = data.cleanNodes;
+  document.getElementById('sr-score').textContent       = data.riskScore;
+
+  const badge = document.getElementById('sr-threat-badge');
+  badge.textContent  = data.threatDescription || '–';
+  badge.className    = 'sim-threat-badge' + (data.highTrustHit ? '' : ' safe');
+
+  // Timeline
+  document.getElementById('sr-timeline').innerHTML = (data.timeline || []).map(e => `
+    <div class="tl-row">
+      <div class="tl-label">Node ${e.nodeId} — ${e.nodeName}</div>
+      <div class="tl-bar-wrap"><div class="tl-bar" style="width:${e.barPercent}%"></div></div>
+      <div class="tl-t">T=${e.time}</div>
+    </div>`).join('') || '<div style="color:#555;font-size:13px;">No spread occurred.</div>';
+
+  // Fastest path
+  const pathWrap = document.getElementById('sr-path-wrap');
+  const pathEl   = document.getElementById('sr-path');
+  if (data.fastestPath && data.fastestPath.length > 1) {
+    pathWrap.style.display = 'block';
+    const last = data.fastestPath.length - 1;
+    pathEl.innerHTML = data.fastestPath.map((id, i) => {
+      const cls   = i === last ? 'pn-db' : 'pn-entry';
+      const arrow = i < last ? '<span class="path-arr">→</span>' : '';
+      const nd    = simNodes.find(n => n.id === id);
+      return `<div class="path-node ${cls}">${nd ? nd.name : id}</div>${arrow}`;
+    }).join('') + `<span style="font-size:12px;color:#e84040;margin-left:6px">· ${data.fastestPathNote}</span>`;
+  } else {
+    pathWrap.style.display = 'none';
+  }
+
+  // Node list
+  document.getElementById('sr-nodes').innerHTML = (data.nodes || []).map(n => `
+    <div class="node-row">
+      <div class="dot ${n.compromised ? 'dot-red' : 'dot-green'}"></div>
+      <div class="node-name">${n.name}</div>
+      <div class="node-meta">trust ${n.trust} · ${n.compromised ? 'compromised' : 'clean'}</div>
+    </div>`).join('');
+
+  // Articulation points
+  const artEl = document.getElementById('sr-art');
+  if (data.articulationPoints && data.articulationPoints.length) {
+    artEl.innerHTML = data.articulationPoints.map(ap => `
+      <div class="art-item">
+        <div class="art-dot"></div>
+        <div><div class="art-name">${ap.name}</div><div class="art-note">${ap.note}</div></div>
+      </div>`).join('');
+  } else {
+    artEl.innerHTML = '<div style="color:#555;font-size:13px;">No critical nodes identified.</div>';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CANVAS TOPOLOGY
+// ═══════════════════════════════════════════════════════════════
+function drawTopology(liveNodes) {
+  const canvas = document.getElementById('topo-canvas');
+  if (!canvas) return;
+  const W = canvas.offsetWidth || 700;
+  canvas.width = W; canvas.height = 280;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, 280);
+  const s = W / 700;
+  const staticNodes = [
+    {id:1,name:'Srv1', label:'Node 1',x:170*s,y:100,comp:true},
+    {id:2,name:'Srv2', label:'Node 2',x:75*s, y:160,comp:true},
+    {id:3,name:'WsA',  label:'Node 3',x:190*s,y:215,comp:true},
+    {id:4,name:'WsB',  label:'Node 4',x:285*s,y:230,comp:true},
+    {id:5,name:'Entry',label:'Node 5',x:270*s,y:145,comp:true,entry:true},
+    {id:6,name:'DB',   label:'Node 6',x:420*s,y:90, comp:true,db:true},
+    {id:7,name:'Bkp',  label:'Node 7',x:95*s, y:240,comp:false},
+    {id:8,name:'Iso',  label:'Node 8',x:510*s,y:215,comp:false},
+  ];
+  const nodes = staticNodes.map(sn => {
+    if (liveNodes) { const ln = liveNodes.find(l => l.id === sn.id); if (ln) return {...sn,comp:ln.compromised}; }
+    return sn;
+  });
+  const edges = [[5,1,0.9],[5,3,0.7],[1,2,0.8],[1,6,0.9],[3,4,0.6],[2,7,0.4],[7,8,0.2]];
+  edges.forEach(([a,b,w]) => {
+    const na=nodes[a-1],nb=nodes[b-1];
+    ctx.beginPath(); ctx.moveTo(na.x,na.y); ctx.lineTo(nb.x,nb.y);
+    const isLow = w<=0.4;
+    ctx.strokeStyle=isLow?'#4a3010':'rgba(232,64,64,0.5)';
+    ctx.lineWidth=isLow?1:Math.max(1,w*3); ctx.stroke();
+    ctx.fillStyle=isLow?'#6a5030':'rgba(200,80,80,0.6)';
+    ctx.font=`${Math.round(10*s)}px Segoe UI`; ctx.textAlign='center';
+    ctx.fillText(w,(na.x+nb.x)/2,(na.y+nb.y)/2-5);
+  });
+  edges.forEach(([a,b]) => {
+    const na=nodes[a-1],nb=nodes[b-1],r=22*s;
+    const dx=nb.x-na.x,dy=nb.y-na.y,len=Math.sqrt(dx*dx+dy*dy);
+    const ex=nb.x-(dx/len)*r,ey=nb.y-(dy/len)*r,ang=Math.atan2(dy,dx);
+    ctx.beginPath(); ctx.moveTo(ex,ey);
+    ctx.lineTo(ex-10*Math.cos(ang-0.4)*s,ey-10*Math.sin(ang-0.4)*s);
+    ctx.lineTo(ex-10*Math.cos(ang+0.4)*s,ey-10*Math.sin(ang+0.4)*s);
+    ctx.closePath(); ctx.fillStyle='rgba(232,64,64,0.6)'; ctx.fill();
+  });
+  nodes.forEach(n => {
+    const r=n.entry?26*s:n.db?24*s:20*s;
+    if(n.comp){ctx.beginPath();ctx.arc(n.x,n.y,r+4,0,Math.PI*2);ctx.fillStyle='rgba(232,64,64,0.1)';ctx.fill();}
+    ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);
+    ctx.fillStyle=n.comp?'#2a0a0a':'#0a1a0a';ctx.fill();
+    ctx.strokeStyle=n.comp?'#e84040':'#4caf50';ctx.lineWidth=n.entry||n.db?2.5:1.5;ctx.stroke();
+    ctx.fillStyle=n.comp?'#e84040':'#4caf50';
+    ctx.font=`bold ${Math.round(11*s)}px Segoe UI`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(n.name,n.x,n.y-4);
+    ctx.fillStyle=n.comp?'#7a2020':'#2a5a2a';
+    ctx.font=`${Math.round(10*s)}px Segoe UI`;ctx.fillText(n.label,n.x,n.y+7);
+  });
+  const lx=W-120*s,ly=20;
+  ctx.beginPath();ctx.arc(lx,ly,7,0,Math.PI*2);ctx.fillStyle='#2a0a0a';ctx.fill();
+  ctx.strokeStyle='#e84040';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.fillStyle='#e84040';ctx.font=`${Math.round(11*s)}px Segoe UI`;
+  ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('Compromised',lx+12,ly);
+  ctx.beginPath();ctx.arc(lx,ly+22,7,0,Math.PI*2);ctx.fillStyle='#0a1a0a';ctx.fill();
+  ctx.strokeStyle='#4caf50';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.fillStyle='#4caf50';ctx.fillText('Clean',lx+12,ly+22);
+}
+window.addEventListener('load',   () => drawTopology());
+window.addEventListener('resize', () => {
+  if(document.getElementById('panel-overview').classList.contains('active')) drawTopology();
+});
+
+// ═══════════════════════════════════════════════════════════════
+// BLOOM FILTER
+// ═══════════════════════════════════════════════════════════════
+const BSIZE=32,bits=new Array(BSIZE).fill(false);
+function h1(x){return Math.abs((x*2654435761)%BSIZE);}
+function h2(x){return Math.abs((x*1234567891)%BSIZE);}
+function bloomAddId(id){bits[h1(id)]=true;bits[h2(id)]=true;renderBits();}
+function renderBits(){
+  const el=document.getElementById('bloom-grid');if(!el)return;
+  el.innerHTML=bits.map((b,i)=>`<div class="bloom-bit${b?' on':''}" title="bit ${i}"></div>`).join('');
+}
+function bloomAdd(){const v=parseInt(document.getElementById('bloom-in').value);if(isNaN(v)||v<1)return;bloomAddId(v);document.getElementById('bloom-result').style.display='none';}
+function bloomCheck(){
+  const v=parseInt(document.getElementById('bloom-in').value);if(isNaN(v)||v<1)return;
+  const maybe=bits[h1(v)]&&bits[h2(v)];
+  const el=document.getElementById('bloom-result');
+  el.style.display='block';el.className='bloom-result '+(maybe?'br-yes':'br-no');
+  el.textContent=maybe?`Node ${v}: possibly flagged — mightBeFlagged() returns true`:`Node ${v}: definitely NOT flagged — mightBeFlagged() returns false`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+window.addEventListener('load', () => {
+  loadOverview();
+  loadSpread();
+  loadScoring();
+  loadRemoval();
+});
+</script>
+</body>
+</html>

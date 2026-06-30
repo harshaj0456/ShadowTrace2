@@ -1,0 +1,37 @@
+.scan-age {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.node-count-badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.node-row-compromised {
+  background: rgba(229, 55, 58, 0.03);
+  border-radius: 6px;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  margin: 0 -6px;
+}
+
+/* pulsing dot for compromised nodes */
+.dot-red {
+  animation: dotPulse 2s infinite;
+}
+
+@keyframes dotPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 4px var(--red);
+  }
+  50% {
+    box-shadow:
+      0 0 10px var(--red),
+      0 0 20px rgba(229, 55, 58, 0.3);
+  }
+}

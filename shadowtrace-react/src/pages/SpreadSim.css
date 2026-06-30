@@ -1,0 +1,246 @@
+/* ── Controls ── */
+.bfs-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.bfs-btns {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.bfs-btn {
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 7px 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--surface2);
+  color: var(--muted);
+}
+
+.bfs-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.bfs-play {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+  font-weight: 700;
+}
+.bfs-play:hover:not(:disabled) { background: #c92c2c; }
+
+.bfs-pause {
+  background: var(--amber-dim);
+  border-color: rgba(217,119,6,0.3);
+  color: var(--amber);
+  font-weight: 700;
+}
+
+.bfs-step:hover:not(:disabled) {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.bfs-reset:hover { border-color: var(--muted); color: var(--text); }
+
+.bfs-mute {
+  padding: 7px 12px;
+  font-size: 14px;
+}
+
+/* ── Step description ── */
+.bfs-step-desc {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  padding: 7px 12px;
+  background: var(--surface2);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  flex: 1;
+  transition: all 0.3s;
+}
+
+.desc-active {
+  border-color: rgba(229,55,58,0.3);
+  color: var(--red);
+  background: var(--red-dim);
+}
+
+.desc-done {
+  border-color: rgba(22,163,74,0.3);
+  color: var(--green);
+  background: var(--green-dim);
+}
+
+/* ── Progress bar ── */
+.bfs-progress-wrap {
+  height: 4px;
+  background: var(--surface3);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.bfs-progress-bar {
+  height: 100%;
+  background: var(--red);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+/* ── Timeline rows ── */
+.bfs-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.bfs-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.4s ease;
+  position: relative;
+}
+
+.bfs-hidden {
+  opacity: 0.2;
+  filter: grayscale(1);
+}
+
+.bfs-revealed {
+  opacity: 1;
+  filter: none;
+  background: var(--surface2);
+  border-color: var(--border);
+}
+
+.bfs-current {
+  border-color: rgba(229,55,58,0.4) !important;
+  background: var(--red-dim) !important;
+  animation: rowFlash 0.4s ease;
+}
+
+@keyframes rowFlash {
+  0%   { background: rgba(229,55,58,0.2); }
+  100% { background: var(--red-dim); }
+}
+
+.bfs-step-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.bfs-node-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 130px;
+}
+
+.bfs-node-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.bfs-node-id {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.bfs-bar-wrap {
+  flex: 1;
+  height: 5px;
+  background: var(--surface3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bfs-bar {
+  height: 100%;
+  background: var(--red);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.bfs-time {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 30px;
+  text-align: right;
+}
+
+.bfs-pulse-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: var(--red);
+  color: #fff;
+  letter-spacing: 0.5px;
+  animation: badgePulse 0.8s infinite;
+  flex-shrink: 0;
+}
+
+@keyframes badgePulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+/* ── Fastest path reveal ── */
+.bfs-path-section {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  transition: all 0.5s ease;
+}
+
+.path-hidden {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+
+.path-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.path-item-anim {
+  animation: pathItemIn 0.4s ease both;
+}
+
+@keyframes pathItemIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.path-arr-animated {
+  animation: arrowPulse 1.5s infinite;
+}
+
+@keyframes arrowPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}

@@ -1,0 +1,33 @@
+SHADOWTRACE INCIDENT REPORT
+Generated: 2026-04-20 22:56:19
+============================================================
+
+THREAT SUMMARY
+Total threats    : 5
+Compromised nodes: 7
+Clean nodes      : 1
+Fastest path     : [2, 7]
+
+THREAT DETAILS
+Type: PERSISTENCE_CYCLE | Score: 100.0 | Nodes: [3, 2, 1] | Backdoor cycle detected: 3 components form a mutual reinstallation loop
+Type: MITM | Score: 95.0 | Nodes: [4] | Duplicate MAC detected: AA:BB:CC:DD:EE:01 is claimed by IPs [192.168.1.1, 192.168.1.2]
+Type: MITM | Score: 90.0 | Nodes: [4] | ARP spoofing detected: IP 192.168.1.2 is claiming MAC AA:BB:CC:DD:EE:01, but the legitimate MAC is AA:BB:CC:DD:EE:02
+Type: MITM | Score: 80.0 | Nodes: [4] | Path deviation detected. Unexpected nodes found in actual path: [4]
+Type: SPREAD | Score: 90.0 | Nodes: [1, 2, 3, 4, 5, 6, 7] | Backdoor spread reached 7 nodes. Fastest spread path: [2, 7]
+
+INFECTION TIMELINE
+T=0 Node 2
+T=1 Node 1
+T=1 Node 7
+T=2 Node 5
+T=2 Node 6
+T=3 Node 3
+T=4 Node 4
+
+SAFE REMOVAL PLAN
+=== Removal plan for persistence cycle: [3, 2, 1] ===
+Step 1: Remove node 3
+Step 2: Remove node 1
+Step 3: Remove node 2
+
+CLEAN NODES: [8]
