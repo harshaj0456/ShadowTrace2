@@ -3,7 +3,7 @@ import axios from 'axios'
 import './Page.css'
 import './SpreadSim.css'
 
-const API = 'http://localhost:8080/api'
+const API = import.meta.env.VITE_API_URL;
 
 // ── tiny Web Audio ping ──
 function playPing(type = 'infect') {

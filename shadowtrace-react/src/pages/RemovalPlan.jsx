@@ -3,7 +3,7 @@ import axios from 'axios'
 import './Page.css'
 import './RemovalPlan.css'
 
-const API = 'http://localhost:8080/api'
+const API = import.meta.env.VITE_API_URL;
 
 export default function RemovalPlan() {
   const [data, setData]           = useState(null)

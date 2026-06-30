@@ -6,7 +6,7 @@ import axios from "axios";
 import "./Page.css";
 import "./Dashboard.css";
 
-const API = "http://localhost:8080/api";
+const API = import.meta.env.VITE_API_URL;
 
 function useCountUp(target, duration = 1000) {
   const [val, setVal] = useState(0);

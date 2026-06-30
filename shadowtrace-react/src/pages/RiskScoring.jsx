@@ -12,7 +12,7 @@ import {
 import "./Page.css";
 import "./RiskScoring.css";
 
-const API = "http://localhost:8080/api";
+const API = import.meta.env.VITE_API_URL;
 const BSIZE = 32;
 const h1 = (x) => Math.abs((x * 2654435761) % BSIZE);
 const h2 = (x) => Math.abs((x * 1234567891) % BSIZE);
