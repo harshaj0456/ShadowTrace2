@@ -66,7 +66,7 @@ class SimRequest {
 }
 
 // ──────────────────────────────────────────────────────────────
-// /api/overview  (hardcoded demo — unchanged)
+// /api/overview  (hardcoded demo — unchanged, intentional)
 // ──────────────────────────────────────────────────────────────
 @RestController
 @RequestMapping("/api/overview")
@@ -103,7 +103,7 @@ class OverviewController {
 }
 
 // ──────────────────────────────────────────────────────────────
-// /api/spread  (hardcoded demo — unchanged)
+// /api/spread  (hardcoded demo — unchanged, intentional)
 // ──────────────────────────────────────────────────────────────
 @RestController
 @RequestMapping("/api/spread")
@@ -144,7 +144,7 @@ class SpreadController {
 }
 
 // ──────────────────────────────────────────────────────────────
-// /api/scoring  (hardcoded demo — unchanged)
+// /api/scoring  (hardcoded demo — unchanged, intentional)
 // ──────────────────────────────────────────────────────────────
 @RestController
 @RequestMapping("/api/scoring")
@@ -164,7 +164,7 @@ class ScoringController {
 }
 
 // ──────────────────────────────────────────────────────────────
-// /api/removal  (hardcoded demo — unchanged)
+// /api/removal  (hardcoded demo — unchanged, intentional)
 // ──────────────────────────────────────────────────────────────
 @RestController
 @RequestMapping("/api/removal")
@@ -193,17 +193,31 @@ class RemovalController {
 }
 
 // ──────────────────────────────────────────────────────────────
-// /api/simulate  — NEW custom topology POST endpoint
+// /api/simulate  — custom topology POST endpoint
 //
 // Algorithms used:
 //   • BFS          → spread simulation from entry node
 //   • Dijkstra     → fastest (highest-weight) spread path
 //   • Degree centrality heuristic → articulation point detection
-//   • Risk scoring → base 40 + 10/node + 15 if high-trust hit
+//   • Risk scoring → spread-ratio based, scaled by trust severity
+//
+// FIXES APPLIED (previously caused identical/saturated results
+// across different topologies):
+//   1. Risk score formula now scales with % of network compromised
+//      instead of raw compromised count, so small and large
+//      topologies don't all saturate at the 99 cap.
+//   2. Timeline bar % now scaled relative to compromised count too,
+//      so a 3-node spread doesn't look identical to an 8-node spread.
+//   3. Articulation point limit raised from a hardcoded 3 to scale
+//      with topology size (more points returned for bigger networks).
+//   4. Spread threshold (0.3) extracted as a named constant instead
+//      of a magic number repeated in two places.
 // ──────────────────────────────────────────────────────────────
 @RestController
 @RequestMapping("/api/simulate")
 class SimulateController {
+
+    private static final double SPREAD_THRESHOLD = 0.3;
 
     @PostMapping
     public Map<String, Object> simulate(@RequestBody SimRequest req) {
@@ -221,7 +235,7 @@ class SimulateController {
             adj.computeIfAbsent(e.to, k -> new ArrayList<>()).add(rev);
         }
 
-        // ── 2. BFS spread (weight > 0.3 means it spreads) ──
+        // ── 2. BFS spread (weight > threshold means it spreads) ──
         Set<Integer>         compromised = new LinkedHashSet<>();
         Map<Integer,Integer> timeMap     = new LinkedHashMap<>();
         Queue<Integer>       queue       = new LinkedList<>();
@@ -232,7 +246,7 @@ class SimulateController {
             int cur = queue.poll();
             int t   = timeMap.get(cur);
             for (SimEdge e : adj.getOrDefault(cur, List.of())) {
-                if (!compromised.contains(e.to) && e.weight > 0.3) {
+                if (!compromised.contains(e.to) && e.weight > SPREAD_THRESHOLD) {
                     compromised.add(e.to);
                     timeMap.put(e.to, t + 1);
                     queue.add(e.to);
@@ -245,12 +259,18 @@ class SimulateController {
             .collect(Collectors.toCollection(LinkedHashSet::new));
 
         // ── 3. Build timeline ──
-        int maxTime = timeMap.values().stream().mapToInt(i->i).max().orElse(1);
+        // FIX: bar percent now also factors in compromised.size() relative
+        // to total nodes, so a small fully-compromised net doesn't always
+        // render identically to a large one — bars reflect actual severity.
+        int maxTime = timeMap.values().stream().mapToInt(i -> i).max().orElse(1);
+        double networkSeverity = nodes.isEmpty() ? 1.0 : (double) compromised.size() / nodes.size();
         List<Map<String,Object>> timeline = new ArrayList<>();
         timeMap.entrySet().stream().sorted(Map.Entry.comparingByValue()).forEach(entry -> {
             SimNode nd = nodes.stream().filter(n -> n.id == entry.getKey()).findFirst().orElse(null);
             if (nd == null) return;
-            int barPct = maxTime == 0 ? 100 : Math.min(100, (int)(100.0*(maxTime - entry.getValue())/maxTime + 10));
+            double recencyFactor = maxTime == 0 ? 1.0 : (double)(maxTime - entry.getValue()) / maxTime;
+            int barPct = (int) Math.round(Math.min(100, Math.max(8,
+                (recencyFactor * 70 + networkSeverity * 30))));
             Map<String,Object> row = new LinkedHashMap<>();
             row.put("nodeId",     nd.id);
             row.put("nodeName",   nd.name);
@@ -292,25 +312,50 @@ class SimulateController {
         }
 
         // ── 5. Risk score ──
+        // FIX: previously "40 + 10*compromised + 15" saturated to the 99 cap
+        // for almost any topology with 5+ compromised nodes, making every
+        // simulation show 99/HIGH RISK regardless of actual severity.
+        // Now scaled by % of network compromised + avg trust of breached
+        // nodes, so small/contained breaches score low and only near-total
+        // high-trust compromises approach the cap.
         boolean highTrustHit = compromised.stream().anyMatch(id ->
             nodes.stream().filter(n -> n.id == id).anyMatch(n -> n.trust > 0.8));
-        int score = Math.min(99, 40 + compromised.size() * 10 + (highTrustHit ? 15 : 0));
+
+        double spreadRatio = nodes.isEmpty() ? 0 : (double) compromised.size() / nodes.size();
+
+        double avgCompromisedTrust = compromised.stream()
+            .mapToDouble(id -> nodes.stream()
+                .filter(n -> n.id == id)
+                .mapToDouble(n -> n.trust)
+                .findFirst().orElse(0))
+            .average().orElse(0);
+
+        int base       = (int) Math.round(15 + spreadRatio * 40);
+        int trustBoost = (int) Math.round(avgCompromisedTrust * 25);
+        int hitBonus   = highTrustHit ? 10 : 0;
+
+        int score = Math.min(99, Math.max(5, base + trustBoost + hitBonus));
 
         // ── 6. Articulation points (degree heuristic) ──
+        // FIX: limit was a hardcoded 3 regardless of topology size — a
+        // 20-node network and a 4-node network both got "top 3", which
+        // hides real critical nodes in larger graphs. Now scales with size.
         Map<Integer,Long> degree = new HashMap<>();
         for (SimEdge e : edges) {
             degree.merge(e.from, 1L, Long::sum);
             degree.merge(e.to,   1L, Long::sum);
         }
+        int artLimit = Math.max(2, Math.min(6, nodes.size() / 3));
         List<Map<String,Object>> artPoints = compromised.stream()
             .filter(id -> id != entryId)
             .sorted(Comparator.comparingLong((Integer id) -> degree.getOrDefault(id, 0L)).reversed())
-            .limit(3)
+            .limit(artLimit)
             .map(id -> {
                 SimNode nd = nodes.stream().filter(n -> n.id == id).findFirst().orElse(null);
+                long deg = degree.getOrDefault(id, 0L);
                 Map<String,Object> ap = new LinkedHashMap<>();
                 ap.put("name", nd != null ? nd.name + " (Node " + id + ")" : "Node " + id);
-                ap.put("note", "High connectivity — removal disrupts spread chain");
+                ap.put("note", "Degree " + deg + " — removal disrupts spread chain");
                 return ap;
             }).collect(Collectors.toList());
 

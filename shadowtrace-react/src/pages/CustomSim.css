@@ -1,0 +1,206 @@
+/* ── Empty state ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 300px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: center;
+  gap: 8px;
+}
+
+.empty-icon {
+  font-size: 32px;
+  opacity: 0.2;
+  animation: spinSlow 3s linear infinite;
+}
+
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Run button pulse while loading ── */
+.run-sim-btn.running {
+  animation: runPulse 1s infinite;
+}
+
+@keyframes runPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* ── Result summary with gauge ── */
+.result-summary {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 20px;
+  background: var(--surface2);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  animation: summaryIn 0.4s ease;
+}
+
+@keyframes summaryIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gauge-wrap {
+  position: relative;
+  width: 140px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.gauge-svg {
+  width: 140px;
+  height: 80px;
+}
+
+.gauge-value {
+  position: absolute;
+  top: 38px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.gauge-label {
+  position: absolute;
+  top: 66px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.result-stats {
+  display: flex;
+  gap: 24px;
+  flex: 1;
+  justify-content: center;
+}
+
+.stat-mini {
+  text-align: center;
+}
+
+.stat-mini-val {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.stat-mini-label {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+/* ── Threat description ── */
+.threat-desc-box {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  animation: summaryIn 0.4s ease 0.1s both;
+}
+
+/* ── Animated infection timeline ── */
+.sim-tl-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  transition:
+    opacity 0.4s ease,
+    filter 0.4s ease;
+}
+
+.sim-tl-row:last-child {
+  border-bottom: none;
+}
+
+.tl-hidden {
+  opacity: 0.15;
+  filter: grayscale(1);
+}
+
+.tl-revealed {
+  opacity: 1;
+  filter: none;
+  animation: tlRowIn 0.3s ease;
+}
+
+@keyframes tlRowIn {
+  from {
+    transform: translateX(-4px);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.tl-entry .tl-label {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.entry-badge {
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: var(--red);
+  color: #fff;
+  letter-spacing: 0.5px;
+  margin-right: 6px;
+}
+
+/* ── Entry point highlight in node list ── */
+.entry-highlight {
+  background: var(--red-dim);
+  border-radius: 6px;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  margin: 0 -6px;
+}
+.entry-highlight .node-name {
+  color: var(--text);
+}
+.entry-ring-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--red);
+  margin-left: 6px;
+  font-weight: 700;
+}

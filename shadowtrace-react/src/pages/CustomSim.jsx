@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import "./Page.css";
+import "./CustomSim.css";
 
 const API = "http://localhost:8080/api";
 
@@ -84,6 +85,60 @@ const PRESETS = {
   },
 };
 
+// ── Risk gauge component ──
+function RiskGauge({ score }) {
+  const [animScore, setAnimScore] = useState(0);
+
+  useEffect(() => {
+    setAnimScore(0);
+    const t = setTimeout(() => setAnimScore(score), 200);
+    return () => clearTimeout(t);
+  }, [score]);
+
+  const radius = 54;
+  const circumference = Math.PI * radius; // half circle
+  const pct = Math.min(100, Math.max(0, animScore));
+  const offset = circumference - (pct / 100) * circumference;
+
+  const color =
+    score >= 70 ? "var(--red)" : score >= 40 ? "var(--amber)" : "var(--green)";
+  const label =
+    score >= 70 ? "HIGH RISK" : score >= 40 ? "MODERATE RISK" : "LOW RISK";
+
+  return (
+    <div className="gauge-wrap">
+      <svg viewBox="0 0 140 80" className="gauge-svg">
+        <path
+          d="M 13 70 A 54 54 0 0 1 127 70"
+          fill="none"
+          stroke="var(--surface3)"
+          strokeWidth="10"
+          strokeLinecap="round"
+        />
+        <path
+          d="M 13 70 A 54 54 0 0 1 127 70"
+          fill="none"
+          stroke={color}
+          strokeWidth="10"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          style={{
+            transition:
+              "stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1), stroke 0.3s",
+          }}
+        />
+      </svg>
+      <div className="gauge-value" style={{ color }}>
+        {Math.round(animScore)}
+      </div>
+      <div className="gauge-label" style={{ color }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
 export default function CustomSim() {
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
@@ -98,6 +153,7 @@ export default function CustomSim() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [revealStep, setRevealStep] = useState(0);
 
   const addNode = () => {
     const { id, name, type, trust } = form;
@@ -138,6 +194,8 @@ export default function CustomSim() {
   const runSim = async () => {
     setError("");
     setLoading(true);
+    setResult(null);
+    setRevealStep(0);
     try {
       const r = await axios.post(`${API}/simulate`, {
         nodes,
@@ -145,6 +203,13 @@ export default function CustomSim() {
         entryNodeId: parseInt(entry),
       });
       setResult(r.data);
+      const n = r.data?.timeline?.length || 0;
+      let i = 0;
+      const iv = setInterval(() => {
+        i++;
+        setRevealStep(i);
+        if (i >= n) clearInterval(iv);
+      }, 250);
     } catch {
       setError("Backend unavailable. Start Spring Boot on :8080");
     } finally {
@@ -176,7 +241,7 @@ export default function CustomSim() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        {/* LEFT — builder */}
+        {/* LEFT — builder (unchanged) */}
         <div>
           <div style={{ marginBottom: 16 }}>
             <div className="card-title" style={{ marginBottom: 10 }}>
@@ -363,10 +428,10 @@ export default function CustomSim() {
                         key={j}
                         style={{
                           padding: "7px 8px",
-                          color: "#c9d1d9",
+                          color: "var(--text)",
                           fontFamily: "var(--mono)",
                           fontSize: 11,
-                          borderBottom: "1px solid rgba(255,255,255,0.03)",
+                          borderBottom: "1px solid var(--border)",
                         }}
                       >
                         {v}
@@ -375,7 +440,7 @@ export default function CustomSim() {
                     <td
                       style={{
                         padding: "7px 8px",
-                        borderBottom: "1px solid rgba(255,255,255,0.03)",
+                        borderBottom: "1px solid var(--border)",
                       }}
                     >
                       <button
@@ -504,10 +569,10 @@ export default function CustomSim() {
                         key={j}
                         style={{
                           padding: "7px 8px",
-                          color: "#c9d1d9",
+                          color: "var(--text)",
                           fontFamily: "var(--mono)",
                           fontSize: 11,
-                          borderBottom: "1px solid rgba(255,255,255,0.03)",
+                          borderBottom: "1px solid var(--border)",
                         }}
                       >
                         {v}
@@ -516,7 +581,7 @@ export default function CustomSim() {
                     <td
                       style={{
                         padding: "7px 8px",
-                        borderBottom: "1px solid rgba(255,255,255,0.03)",
+                        borderBottom: "1px solid var(--border)",
                       }}
                     >
                       <button
@@ -570,6 +635,7 @@ export default function CustomSim() {
             <button
               onClick={runSim}
               disabled={nodes.length < 2 || !entry || loading}
+              className={`run-sim-btn ${loading ? "running" : ""}`}
               style={{
                 width: "100%",
                 background:
@@ -605,24 +671,11 @@ export default function CustomSim() {
           </div>
         </div>
 
-        {/* RIGHT — results */}
+        {/* RIGHT — results (upgraded) */}
         <div>
           {!result ? (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "100%",
-                color: "var(--muted)",
-                fontFamily: "var(--mono)",
-                fontSize: 12,
-                textAlign: "center",
-                gap: 8,
-              }}
-            >
-              <div style={{ fontSize: 32, opacity: 0.2 }}>⟳</div>
+            <div className="empty-state">
+              <div className="empty-icon">⟳</div>
               <div>
                 Add nodes and edges,
                 <br />
@@ -631,108 +684,140 @@ export default function CustomSim() {
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div className="result-summary">
+                <RiskGauge score={result.riskScore} />
+                <div className="result-stats">
+                  {[
+                    ["Compromised", result.compromisedNodes, "red"],
+                    ["Clean", result.cleanNodes, "green"],
+                  ].map(([l, v, c]) => (
+                    <div key={l} className="stat-mini">
+                      <div
+                        className="stat-mini-val"
+                        style={{ color: `var(--${c})` }}
+                      >
+                        {v}
+                      </div>
+                      <div className="stat-mini-label">{l.toUpperCase()}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div
+                className="threat-desc-box"
                 style={{
-                  display: "flex",
-                  gap: 12,
-                  padding: 16,
-                  background: "var(--surface2)",
-                  borderRadius: 10,
-                  border: "1px solid var(--border)",
-                  flexWrap: "wrap",
+                  background: result.highTrustHit
+                    ? "var(--red-dim)"
+                    : "var(--green-dim)",
+                  color: result.highTrustHit ? "var(--red)" : "var(--green)",
+                  border: `1px solid ${result.highTrustHit ? "rgba(229,55,58,0.2)" : "rgba(22,163,74,0.2)"}`,
                 }}
               >
-                {[
-                  ["Compromised", result.compromisedNodes, "red"],
-                  ["Clean", result.cleanNodes, "green"],
-                  ["Risk Score", result.riskScore, "amber"],
-                ].map(([l, v, c]) => (
-                  <div key={l} style={{ textAlign: "center", flex: 1 }}>
-                    <div
-                      style={{
-                        fontFamily: "var(--mono)",
-                        fontSize: 28,
-                        fontWeight: 700,
-                        color: `var(--${c})`,
-                      }}
-                    >
-                      {v}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 10,
-                        color: "var(--muted)",
-                        letterSpacing: 0.5,
-                        marginTop: 2,
-                      }}
-                    >
-                      {l.toUpperCase()}
-                    </div>
-                  </div>
-                ))}
-                <div
-                  style={{
-                    padding: "8px 14px",
-                    borderRadius: 8,
-                    background: result.highTrustHit
-                      ? "var(--red-dim)"
-                      : "var(--green-dim)",
-                    color: result.highTrustHit ? "var(--red)" : "var(--green)",
-                    border: `1px solid ${result.highTrustHit ? "rgba(240,71,71,0.2)" : "rgba(63,185,80,0.2)"}`,
-                    fontSize: 12,
-                    flex: 2,
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
-                  {result.threatDescription}
-                </div>
+                {result.threatDescription}
               </div>
 
               <div className="card">
                 <div className="card-hd">
                   <span className="card-title">Infection Timeline</span>
+                  <span className="chip chip-red">BFS</span>
                 </div>
-                {result.timeline?.map((e) => (
-                  <div key={e.nodeId} className="tl-row">
-                    <div className="tl-label">
-                      Node {e.nodeId} — {e.nodeName}
+                {result.timeline?.map((e, i) => {
+                  const isEntry = e.nodeId === result.entryNodeId;
+                  const revealed = i < revealStep;
+                  return (
+                    <div
+                      key={e.nodeId}
+                      className={`sim-tl-row ${revealed ? "tl-revealed" : "tl-hidden"} ${isEntry ? "tl-entry" : ""}`}
+                    >
+                      <div className="tl-label">
+                        {isEntry && <span className="entry-badge">ENTRY</span>}
+                        Node {e.nodeId} — {e.nodeName}
+                      </div>
+                      <div className="tl-bar-wrap">
+                        <div
+                          className="tl-bar"
+                          style={{
+                            width: revealed ? `${e.barPercent}%` : "0%",
+                          }}
+                        />
+                      </div>
+                      <div className="tl-t">T={e.time}</div>
                     </div>
-                    <div className="tl-bar-wrap">
-                      <div
-                        className="tl-bar"
-                        style={{ width: `${e.barPercent}%` }}
-                      />
-                    </div>
-                    <div className="tl-t">T={e.time}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="card">
                 <div className="card-hd">
                   <span className="card-title">Node Status</span>
                 </div>
-                {result.nodes?.map((n) => (
-                  <div key={n.id} className="node-row">
-                    <span
-                      className={`dot ${n.compromised ? "dot-red" : "dot-green"}`}
-                    />
-                    <span className="node-name">{n.name}</span>
-                    <span className="node-meta">trust {n.trust}</span>
-                    <span
-                      className={`node-status ${n.compromised ? "status-red" : "status-green"}`}
+                {result.nodes?.map((n) => {
+                  const isEntry = n.id === result.entryNodeId;
+                  return (
+                    <div
+                      key={n.id}
+                      className={`node-row ${isEntry ? "entry-highlight" : ""}`}
                     >
-                      {n.compromised ? "compromised" : "clean"}
-                    </span>
-                  </div>
-                ))}
+                      <span
+                        className={`dot ${n.compromised ? "dot-red" : "dot-green"}`}
+                      />
+                      <span className="node-name">
+                        {n.name}
+                        {isEntry && (
+                          <span className="entry-ring-badge">⊙ entry</span>
+                        )}
+                      </span>
+                      <span className="node-meta">trust {n.trust}</span>
+                      <span
+                        className={`node-status ${n.compromised ? "status-red" : "status-green"}`}
+                      >
+                        {n.compromised ? "compromised" : "clean"}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
+
+              {result.fastestPath?.length > 0 && (
+                <div className="card">
+                  <div className="card-hd">
+                    <span className="card-title">Fastest Spread Path</span>
+                    <span className="chip chip-blue">DIJKSTRA</span>
+                  </div>
+                  <div className="path-row">
+                    {result.fastestPath.map((id, i) => {
+                      const nd = result.nodes?.find((n) => n.id === id);
+                      return (
+                        <span
+                          key={id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <div
+                            className={`path-node ${i === result.fastestPath.length - 1 ? "pn-target" : "pn-entry"}`}
+                          >
+                            {nd?.name || id}
+                          </div>
+                          {i < result.fastestPath.length - 1 && (
+                            <span className="path-arr">→</span>
+                          )}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <div className="path-note">{result.fastestPathNote}</div>
+                </div>
+              )}
 
               {result.articulationPoints?.length > 0 && (
                 <div className="card">
                   <div className="card-hd">
                     <span className="card-title">Critical Nodes to Remove</span>
+                    <span className="chip chip-amber">DEGREE CENTRALITY</span>
                   </div>
                   {result.articulationPoints.map((ap, i) => (
                     <div key={i} className="art-item">
